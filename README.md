@@ -87,12 +87,3 @@ webTestClient.post()
 ## Configuration
 - **application.properties**: Main configuration for routes, JWT, Eureka, etc.
 - **application-test.properties**: Test-specific configuration (enables Eureka, sets up test routes)
-
-## Contribution
-1. Fork the repo and create your feature branch (`git checkout -b feature/your-feature`)
-2. Commit your changes (`git commit -am 'Add new feature'`)
-3. Push to the branch (`git push origin feature/your-feature`)
-4. Open a Pull Request
-
-## License
-MIT 
