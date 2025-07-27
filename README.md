@@ -1,16 +1,16 @@
 # API Gateway
 
-A Spring Cloud Gateway project for secure, scalable, and reactive API routing with JWT authentication, rate limiting, and service discovery via Eureka.
+A Spring Cloud Gateway project for secure, scalable API routing with JWT authentication, rate limiting, and service discovery via Eureka.
 
 ## Features
-- **Spring Cloud Gateway** for reactive API routing
+- **Spring Cloud Gateway** for API routing (servlet-based)
 - **JWT Authentication** for secure endpoints
 - **Eureka Service Discovery** for dynamic routing to microservices
 - **Circuit Breaker & Resilience** with fallback responses
 - **Role-Based Access Control (RBAC)** at gateway level
 - **API Versioning** support (path-based and header-based)
 - **Rate Limiting** (configurable)
-- **Integration Tests** for authentication and protected routes
+- **Integration Tests** for authentication and protected routes (using MockMvc)
 
 ## Prerequisites
 - Java 17+
@@ -69,14 +69,12 @@ Integration tests are located in `src/test/java/com/example/api_gateway/Integrat
 - **JWT-protected endpoints**: Valid/invalid/expired/malformed tokens
 - **Routing**: Ensures requests are routed via Eureka to the auth-service
 
-#### Example Test Case
+#### Example Test Case (MockMvc)
 ```java
-webTestClient.post()
-    .uri("/api/auth/login")
+mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/login")
     .contentType(MediaType.APPLICATION_JSON)
-    .bodyValue("{"email":"test@example.com","password":"password123"}")
-    .exchange()
-    .expectStatus().isOk();
+    .content("{\"email\":\"test@example.com\",\"password\":\"password123\"}"))
+    .andExpect(MockMvcResultMatchers.status().isOk());
 ```
 
 #### Run All Tests
@@ -87,6 +85,16 @@ webTestClient.post()
 ## Configuration
 - **application.properties**: Main configuration for routes, JWT, Eureka, etc.
 - **application-test.properties**: Test-specific configuration (enables Eureka, sets up test routes)
+
+## Notes on Migration
+- The project now uses the **servlet-based Spring Boot stack** (`spring-boot-starter-web`), not WebFlux.
+- All filters are implemented as `OncePerRequestFilter`.
+- Exception handling uses `@ControllerAdvice` and `@ExceptionHandler`.
+- Tests use **MockMvc** instead of WebTestClient.
+- Ensure you have the correct dependencies in `pom.xml`:
+  - `spring-boot-starter-web`
+  - `javax.servlet-api` (provided)
+  - All required Spring Cloud dependencies
 
 ## Contribution
 1. Fork the repo and create your feature branch (`git checkout -b feature/your-feature`)

@@ -1,56 +1,47 @@
 package com.example.api_gateway.exception;
 
-import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
-import org.springframework.core.annotation.Order;
-import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
-import org.springframework.web.server.ServerWebExchange;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import reactor.core.publisher.Mono;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
-@Component
-@Order(-2)
-public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
+@RestControllerAdvice
+public class GlobalExceptionHandler {
 
-    @Override
-    public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
-        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-        String message = "Unexpected error";
+    @ExceptionHandler(BadCredentialsException.class)
+    public Mono<ResponseEntity<Map<String, String>>> handleBadCredentials(BadCredentialsException ex) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", "Authentication failed");
+        errorResponse.put("message", "Invalid credentials");
+        errorResponse.put("status", "401");
 
-        if (ex instanceof org.springframework.security.authentication.BadCredentialsException) {
-            status = HttpStatus.UNAUTHORIZED;
-            message = "Invalid credentials";
-        } else if (ex instanceof NullPointerException) {
-            status = HttpStatus.BAD_REQUEST;
-            message = "Null value encountered";
-        }
+        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse));
+    }
 
-        String json = """
-            {
-              "timestamp": "%s",
-              "status": %d,
-              "error": "%s",
-              "message": "%s",
-              "path": "%s"
-            }
-            """.formatted(
-                LocalDateTime.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                message,
-                exchange.getRequest().getPath()
-            ).replace("\n", "").replace("  ", "");
+    @ExceptionHandler(NullPointerException.class)
+    public Mono<ResponseEntity<Map<String, Object>>> handleNullPointer(NullPointerException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Null value encountered", ex);
+    }
 
-        exchange.getResponse().setStatusCode(status);
-        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-        DataBuffer buffer = exchange.getResponse()
-            .bufferFactory()
-            .wrap(json.getBytes(StandardCharsets.UTF_8));
+    @ExceptionHandler(Exception.class)
+    public Mono<ResponseEntity<Map<String, Object>>> handleGeneric(Exception ex) {
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error", ex);
+    }
 
-        return exchange.getResponse().writeWith(Mono.just(buffer));
+    private Mono<ResponseEntity<Map<String, Object>>> buildResponse(HttpStatus status, String message, Exception ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", status.value());
+        body.put("error", status.getReasonPhrase());
+        body.put("message", message);
+        body.put("exception", ex.getClass().getSimpleName());
+
+        return Mono.just(ResponseEntity.status(status).body(body));
     }
 }

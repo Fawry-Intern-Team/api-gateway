@@ -1,29 +1,19 @@
 package com.example.api_gateway.config;
 
 import com.example.api_gateway.filter.ApiVersionFilter;
-import com.example.api_gateway.filter.JwtWebFilter;
-import com.example.api_gateway.filter.RoleBasedAccessFilter;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
-import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.server.WebFilter;
 
 @Configuration
-@EnableWebFluxSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Autowired
-    private JwtWebFilter jwtWebFilter;
-
-    @Autowired
-    private RoleBasedAccessFilter roleBasedAccessFilter;
-
-    @Autowired
-    private ApiVersionFilter apiVersionFilter;
+    private final CookieTokenAuthenticationConverter cookieTokenAuthenticationConverter;
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
@@ -31,16 +21,14 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .authorizeExchange(authz -> authz
-                        .pathMatchers("/api/auth/login").permitAll()
-                        .pathMatchers("/api/auth/register").permitAll()
-                        .pathMatchers("/actuator/**").permitAll()
+                .authorizeExchange(exchange -> exchange
+                        .pathMatchers("/auth/login", "/auth/register", "/auth/refresh", "/actuator/**").permitAll()
                         .anyExchange().authenticated()
                 )
-                .addFilterAt(jwtWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
-                .addFilterAfter(roleBasedAccessFilter, SecurityWebFiltersOrder.AUTHENTICATION)
-                .addFilterBefore(apiVersionFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .oauth2ResourceServer(auth ->
+                        auth
+                            .bearerTokenConverter(cookieTokenAuthenticationConverter)
+                            .jwt(Customizer.withDefaults()))
                 .build();
     }
 }
-
