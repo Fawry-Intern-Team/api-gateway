@@ -85,7 +85,6 @@ mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/login")
 ## Configuration
 - **application.properties**: Main configuration for routes, JWT, Eureka, etc.
 - **application-test.properties**: Test-specific configuration (enables Eureka, sets up test routes)
-<<<<<<< HEAD
 
 ## Notes on Migration
 - The project now uses the **servlet-based Spring Boot stack** (`spring-boot-starter-web`), not WebFlux.
@@ -105,5 +104,3 @@ mockMvc.perform(MockMvcRequestBuilders.post("/api/auth/login")
 
 ## License
 MIT 
-=======
->>>>>>> 1ad39a69ba14e644767baf955202502b6213e593
